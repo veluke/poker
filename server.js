@@ -25,6 +25,13 @@ io.on('connection', function(socket) {
     socket.on('disconnect', function() {
         console.log(socket.id + ' disconnected');
     });
+	
+	socket.on('sendMessage', function(room, msg){
+	console.log(room + " &&&&& " + msg);
+	io.to(room).emit('receiveMessage', socket.username, msg);
+});
+
+   socket.on('setNickname', function(nickname){socket.username=nickname});;
 
     socket.on("create_room", room => {
         for (var i = 0; i < rooms.length; i++) {
@@ -52,6 +59,7 @@ io.on('connection', function(socket) {
        }
 	   
         socket.join(room);
+		socket.emit('notifyBet', 'You joined ' + room);
         socket.emit('updateActiveRoom', room);
         turns.push({
             'room': room,
@@ -110,16 +118,19 @@ io.on('connection', function(socket) {
 			currentTurn.waiting = socket.id;
             console.log("player 2 = " + currentTurn.p2);
             socket.join(room);
+			socket.emit('notifyBet', 'You joined ' + room);
             socket.emit('updateActiveRoom', room);
             roomUsers.users++;
             console.log(socket.id + ' joined ' + room + " | " + roomUsers.users);
 			
 			if (roomUsers.users == 2){
 			startNewGame(room);
+			io.to(room).emit('notifyBet', "Started new game...");
 			}
 
         } else if (roomUsers.users == 2) {
             console.log("room is full");
+			socket.emit("notifyBet", "The room is full");
         }
     });
 
@@ -127,11 +138,9 @@ io.on('connection', function(socket) {
         let userRooms = Object.keys(socket.rooms);
         for (var i = 1; i < userRooms.length; i++) {
             var room = userRooms[i];
-            if (users.room ==1){users.room = 0};
-			if (users.room==2){users.room =1};
-			console.log(room + " | " + users.room);
+            var leftRoom = findKey(users,'room',room);
+			leftRoom.users = (leftRoom.users - 1);
 			var updateUser = findKey(turns,"room",room);
-			console.log(updateUser.p1 + " | " + updateUser.p2);
 			if (updateUser.p1 == socket.id){
 			updateUser.p1 = "";
 			}
@@ -151,7 +160,7 @@ io.on('connection', function(socket) {
         updating = 0;
         var currentTurn = findKey(turns, 'room', activeRoom);
 		var currentGame = findKey(games, 'room', activeRoom);
-				io.to(currentTurn.turn).emit('notify', "Other players turn...");
+		io.to(currentTurn.turn).emit('notify', "Other players turn...");
 		currentTurn.waiting = currentTurn.turn;
         currentTurn.turn = socket.id;
         console.log('updateTurn: ' + currentTurn.turn);
@@ -178,12 +187,12 @@ io.on('connection', function(socket) {
 				if(currentTurn.winner != "split"){
 				var winner = currentTurn.winner;
 				if (currentTurn.p1 == winner){
-				io.to(currentTurn.p2).emit("notifyBet", "Other player won "+currentTurn.pot+" :(");
+				io.to(currentTurn.p2).emit("notifyBet", "Other player won "+currentTurn.pot);
 				}
 				else if (currentTurn.p1 != winner){
-				io.to(currentTurn.p1).emit("notifyBet", "Other player won "+currentTurn.pot+" :(");
+				io.to(currentTurn.p1).emit("notifyBet", "Other player won "+currentTurn.pot);
 				}
-				io.to(winner).emit("notifyBet", "You won "+ currentTurn.pot+"! :D");
+				io.to(winner).emit("notifyBet", "You won "+ currentTurn.pot+"!");
 				io.to(winner).emit("claimPrize", currentTurn.pot);
 				currentTurn.pot = 0;
 				}
@@ -263,6 +272,9 @@ http.listen(3000, function() {
 
 function startNewGame(room) {
 	var current = findKey(turns,'room',room);
+	var currentTurn = findKey(turns, 'room', room);
+	currentTurn.state = 0;
+	currentTurn.turn = current.p1;
 	io.to(current.p1).emit('notify', "It's your turn!");
 	io.to(current.p2).emit('notify', "Other players turn...");
     console.log("starting new game in " + room);

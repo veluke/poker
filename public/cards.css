@@ -1,3 +1,15 @@
+.chatbox {
+    padding: 0;
+    max-height: 16.5em; /* 1.5 x 3 */
+    overflow-y: auto;
+}
+
+.chatbox li {
+    font-size: 1em;
+    padding: .5em 1em;
+    line-height: 1em;
+}
+
 .card {
   -moz-box-sizing: border-box;
   -webkit-box-sizing: border-box;

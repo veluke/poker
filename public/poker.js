@@ -10,6 +10,17 @@ var pFlush = {};
 var cFlush = {};
 var currentBet = 0;
 
+checkName();
+
+function checkName(){
+var nickname = prompt("Please enter your name", "Putnam");
+if (nickname == null || nickname == ""){
+checkName();
+}
+else if (nickname != null) {
+ socket.emit("setNickname", nickname);
+}
+}
 
 socket.on('updateBet', function(bet){
 	document.getElementById("currentBetText").innerText = bet;
@@ -50,12 +61,52 @@ document.getElementById("placeBetBtn").addEventListener("click", placeBet);
 document.getElementById("foldBtn").addEventListener("click", foldTurn);
 document.getElementById("checkBtn").addEventListener("click", checkTurn);
 document.getElementById("callBtn").addEventListener("click", callTurn);
+document.getElementById("sendmsg").addEventListener("click", sendMessage);
+
+function sendMessage(){
+if (activeRoom!=""){
+	msg = document.getElementById("msg");
+	console.log(msg.text);
+	socket.emit("sendMessage", activeRoom, msg.value);
+	msg.value = "";
+	msg.text = "";
+	}
+	else if (activeRoom == ""){
+		var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode("Please join or create a room to use chat!");
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
+	}
+}
+
+socket.on('receiveMessage', function(username, msg){
+var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode(username + ": "+msg);
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
+});   // Append <li> to <ul> with id="myList"
 
 function callTurn(){
 	if (activeRoom != ""){
+	if(pMoney >= currentBet){
 	socket.emit('userBet', activeRoom, currentBet);
-	}
+	pMoney = pMoney - parseInt(currentBet);
+	document.getElementById("currentFundsText").innerText = pMoney;
+	}}
+	else if (activeRoom ==""){
+		var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode("You need to join or create a room and wait for another player...");
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
 }
+}
+
 
 socket.on('startNewHand', function(){
 console.log("startNewHand was called");
@@ -71,6 +122,14 @@ function foldTurn() {
 		if (activeRoom != ""){
     socket.emit('userTurn', activeRoom, 'fold');
 		}
+		else if (activeRoom ==""){
+		var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode("You need to join or create a room and wait for another player...");
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
+}
 }
 
 socket.on('updatePot', function(pot){
@@ -86,11 +145,21 @@ socket.on('populatedDeck', function(deck) {
 });
 
 socket.on('notify', function(notification){
-	document.getElementById("notification").innerText = notification;
+	var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode(notification);
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
 });
 
 socket.on('notifyBet', function(notification){
-	document.getElementById("notification2").innerText = notification;
+	var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode(notification);
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
 });
 
 socket.on('nextTurn', function(betType) {
@@ -102,6 +171,14 @@ function checkTurn() {
 		if (activeRoom != ""){
    socket.emit('userBet', activeRoom, 0);
 		}
+		else if (activeRoom ==""){
+		var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode("You need to join or create a room and wait for another player...");
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
+}
 }
 
 socket.on('updateState', function (currentState){
@@ -113,7 +190,7 @@ socket.on('updateState', function (currentState){
 });
 
 function placeBet() {
-		if (activeRoom != ""){
+	if (activeRoom != ""){
     var betRegEx = /^[0-9]+/;
     var checkBet = document.getElementById("betAmountTxt").value;
     if (betRegEx.test(checkBet)) {
@@ -122,7 +199,16 @@ function placeBet() {
 	pMoney = pMoney - parseInt(checkBet);
 	document.getElementById("currentFundsText").innerText = pMoney;
 			}
-}}}
+}}
+else if (activeRoom ==""){
+		var node = document.createElement("LI");                 // Create a <li> node
+var textnode = document.createTextNode("You need to join or create a room and wait for another player...");
+console.log(textnode);       // Create a text node
+node.appendChild(textnode);                              // Append the text to <li>
+document.getElementById("chatbox").appendChild(node);
+document.getElementById("chatbox").scrollTop = 10000000000000000000;
+}
+}
 
 socket.on('newPlayerHand', function(newHand) {
 	playerHand=[];
